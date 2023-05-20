@@ -33,10 +33,19 @@ Those can be found from the Internet with the names described in `Dependencies` 
   * GeoLite2-Country.mmdb
   * GeoLite2-ASN.mmdb
 
-## Usage
+## Prerequisites
 
 Once databases are stored under [geoip/assets/](geoip/assets/) directory with the above mentioned names,
-it's possible to compile the binary.
+use `zip` to compress the files, like this:
+
+```bash
+cd geoip/assets
+zip -9 GeoLite2-ASN.zip GeoLite2-ASN.mmdb
+zip -9 GeoLite2-City.zip GeoLite2-City.mmdb
+zip -9 GeoLite2-Country.zip GeoLite2-Country.mmdb
+```
+
+This almost divides the binary's final size by two.
 
 Compiling the binary:
 
@@ -44,6 +53,8 @@ Compiling the binary:
 make build
 
 ```
+
+## Usage
 
 Example usage scenarios:
 
@@ -57,4 +68,3 @@ Example usage scenarios:
 # Show version and build time
 ./dist/hostinfo -v
 ```
-
