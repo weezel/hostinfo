@@ -51,7 +51,6 @@ Compiling the binary:
 
 ```bash
 make build
-
 ```
 
 ## Usage
