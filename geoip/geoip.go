@@ -5,7 +5,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 
@@ -43,7 +43,7 @@ func extractZip(data []byte, filename string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to open file %s: %w", filename, err)
 	}
 
-	zipContent, err := ioutil.ReadAll(fHandle)
+	zipContent, err := io.ReadAll(fHandle)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't read zip contents of file %s: %w", filename, err)
 	}
