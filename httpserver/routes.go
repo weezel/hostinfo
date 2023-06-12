@@ -58,9 +58,17 @@ func HostInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Must be done before address resolve
 	tmp := strings.Split(getClientIP(r), ":") // hostname:port
-	info := hostInfo{
-		SrcAddr: tmp[0],
-		SrcPort: tmp[1],
+	info := hostInfo{}
+	if len(tmp) > 1 {
+		info = hostInfo{
+			SrcAddr: tmp[0],
+			SrcPort: tmp[1],
+		}
+	} else {
+		info = hostInfo{
+			SrcAddr: tmp[0],
+			SrcPort: "0",
+		}
 	}
 
 	geoLocation := geoData.GetGeoData(info.SrcAddr)
