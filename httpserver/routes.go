@@ -96,5 +96,7 @@ func HostInfo(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Failed\n")
 	}
 
+	log.Printf("Incoming connection from: %#v\n", info)
+
 	fmt.Fprintf(w, "%s\n", string(inJSON))
 }
