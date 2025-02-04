@@ -65,6 +65,8 @@ func (rh *RouteHandler) HostInfo(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 	defer cancel()
 
+	startTime := time.Now()
+
 	var err error
 
 	// Must be done before address resolve
@@ -107,7 +109,7 @@ func (rh *RouteHandler) HostInfo(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Failed\n")
 	}
 
-	log.Printf("Incoming connection from: %#v\n", info)
+	log.Printf("Incoming connection from: %#v, took %s\n", info, time.Since(startTime))
 
 	fmt.Fprintf(w, "%s\n", string(inJSON))
 }
