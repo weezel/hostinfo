@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
 	"weezel/hostinfo/geoip"
 
 	"golang.org/x/sync/errgroup"
@@ -50,11 +51,21 @@ func getHostname(ctx context.Context, ip string) (string, error) {
 	return strings.Join(hostNames, ", "), nil
 }
 
-func HostInfo(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
+type RouteHandler struct {
+	geoData *geoip.GeoInfo
+}
+
+func NewRouteHandler() *RouteHandler {
+	return &RouteHandler{
+		geoData: geoip.New(),
+	}
+}
+
+func (rh *RouteHandler) HostInfo(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
+	defer cancel()
+
 	var err error
-	geoData := geoip.New()
-	defer geoData.Close()
 
 	// Must be done before address resolve
 	tmp := strings.Split(getClientIP(r), ":") // hostname:port
@@ -71,10 +82,10 @@ func HostInfo(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	geoLocation := geoData.GetGeoData(info.SrcAddr)
-	eg, ctx := errgroup.WithContext(ctx)
+	geoLocation := rh.geoData.GetGeoData(info.SrcAddr)
+	eg, eCtx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
-		hostnames, err1 := getHostname(ctx, info.SrcAddr)
+		hostnames, err1 := getHostname(eCtx, info.SrcAddr)
 		if err1 != nil {
 			return fmt.Errorf("Failed to resolve hostname for IP=%s: %w", info.SrcAddr, err1)
 		}

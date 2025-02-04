@@ -39,7 +39,8 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc(fmt.Sprintf("/%s", endpoint), httpserver.HostInfo)
+	routeHandler := httpserver.NewRouteHandler()
+	mux.HandleFunc(fmt.Sprintf("/%s", endpoint), routeHandler.HostInfo)
 	httpServ := &http.Server{
 		Addr:              ":" + listenPort,
 		Handler:           mux,
