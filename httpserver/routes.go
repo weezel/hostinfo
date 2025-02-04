@@ -39,11 +39,11 @@ func getClientIP(r *http.Request) string {
 }
 
 func getHostname(ctx context.Context, ip string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, resolverTimeout)
+	cCtx, cancel := context.WithTimeout(ctx, resolverTimeout)
 	defer cancel()
 
 	resolver := net.Resolver{}
-	hostNames, err := resolver.LookupAddr(ctx, ip)
+	hostNames, err := resolver.LookupAddr(cCtx, ip)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve hostname: %w", err)
 	}
