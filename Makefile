@@ -14,7 +14,7 @@ CGO_ENABLED	?= 0
 
 all: test lint build
 
-build:
+_build:
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) \
 		$(GO) build $(LDFLAGS) \
 		-o dist/$(APP_NAME) \
@@ -35,6 +35,11 @@ vulncheck:
 
 escape-analysis:
 	$(GO) build -gcflags="-m" 2>&1
+
+# Easiest way to get proper profiler files:
+# make -B LDFLAGS=-cover build-all
+launch-profiler:
+	$(GO) tool pprof -http=: cpu.prof
 
 docker-build:
 	@DOCKER_BUILDKIT=$(DOCKER_BUILDKIT) $(DOCKER) \
