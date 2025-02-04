@@ -1,14 +1,8 @@
 run:
   timeout: 3m
-  go: ""  # empty -> will be read from go.mod file instead
-  skip-dirs:
-    # Directory has generated code
-    - pkg/generated
+  go: "" # empty -> will be read from go.mod file instead
   # Also lint tests
   tests: true
-  # When enabled these are skipped:
-  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  skip-dirs-use-default: false
   allow-parallel-runners: false
   concurrency: 2
 linters-settings:
@@ -17,7 +11,9 @@ linters-settings:
       - ifElseChain
       - singleCaseSwitch
   govet:
-    check-shadowing: true
+    enable-all: true
+  gofumpt:
+    module-path: "weezel/hostinfo"
   lll:
     # Max line length, lines longer will be reported.
     # '\t' is counted as 1 character by default, and
@@ -27,12 +23,18 @@ linters-settings:
     # Tab width in spaces.
     # Default: 1
     tab-width: 8
+  nestif:
+    min-complexity: 6
+  gosimple:
+    checks: ["all"]
   depguard:
-    additional-guards:
-      - list-type: denylist
-        include-go-root: false
-        packages:
-          - github.com/stretchr/testify
+    rules:
+      main:
+        files:
+          - "**/*.go"
+        deny:
+          - pkg: "github.com/stretchr/testify"
+            desc: "Use stdlib for testing purposes"
 linters:
   disable-all: true
   enable:
@@ -42,27 +44,37 @@ linters:
     - dupl
     - durationcheck
     - errcheck # default
+    - errname
     - errorlint
     - exhaustive
-    - exportloopref
+    - gochecknoinits
+    - goconst
     - gocritic
     - gofmt
     - gofumpt
     - goimports
     - gosec
-    - gosimple  # default
-    - govet  # default
-    - ineffassign  # default
+    - gosimple # default
+    - govet # default
+    - ineffassign # default
     - lll
-    - maligned
+    - mirror
+    - nestif
     - nolintlint
+    - nosprintfhostport
+    - reassign
     - revive
     - sqlclosecheck
-    - staticcheck  # default
-    - typecheck  # default
+    - staticcheck # default
+    - tenv
+    - tparallel
+    - typecheck # default
     - unconvert
-    - unused  # default
+    - unused # default
     - usestdlibvars
+    - whitespace
+    - wrapcheck
+    - zerologlint
 # issues:
 output:
   # Sort results by: filepath, line and column.
@@ -72,3 +84,6 @@ issues:
   # Show all the results, don't hide anything
   max-issues-per-linter: 0
   max-same-issues: 0
+  # When enabled these are skipped:
+  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
+  exclude-dirs-use-default: false
