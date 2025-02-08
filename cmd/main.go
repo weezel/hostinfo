@@ -2,16 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"runtime/pprof"
 	"syscall"
-	"time"
 
 	"weezel/hostinfo/httpserver"
 )
@@ -44,6 +41,8 @@ func enableProfiling() (*os.File, func()) {
 }
 
 func main() {
+	ctx := context.Background()
+
 	flag.BoolVar(&showVersion, "v", false, "Show version (git hash) and build time")
 	flag.StringVar(&endpoint, "e", "", "Which HTTP route endpoint to listen i.e. http://localhost/myendpoint")
 	flag.StringVar(&listenPort, "p", "8080", "Port to listen")
@@ -64,31 +63,15 @@ func main() {
 		}()
 	}
 
-	mux := http.NewServeMux()
-	routeHandler := httpserver.NewRouteHandler()
-	mux.HandleFunc(fmt.Sprintf("/%s", endpoint), routeHandler.HostInfo)
-	httpServ := &http.Server{
-		Addr:              ":" + listenPort,
-		Handler:           mux,
-		ReadHeaderTimeout: 60 * time.Second,
-	}
-
-	go func() {
-		if err := httpServ.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
-			log.Printf("HTTP server closed")
-		}
-	}()
-	log.Printf("Listening on port %s", listenPort)
+	httpServer := httpserver.NewHTTPServer()
+	httpServer.AddRoute(fmt.Sprintf("/%s", endpoint), httpServer.HostInfo)
+	httpServer.Start()
+	defer httpServer.Stop(ctx)
 
 	// Graceful shutdown for HTTP server
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-done
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	log.Println("HTTP server stopping")
-	defer cancel()
-	if err := httpServ.Shutdown(ctx); err != nil {
-		log.Println("HTTP server stopped")
-	}
 }
