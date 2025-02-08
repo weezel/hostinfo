@@ -46,7 +46,7 @@ func main() {
 
 	flag.BoolVar(&showVersion, "v", false, "Show version (git hash) and build time")
 	flag.StringVar(&pathEndoint, "e", "", "Which HTTP route endpoint to listen i.e. http://localhost/myendpoint")
-	flag.StringVar(&listenPort, "p", "", "Port to listen")
+	flag.StringVar(&listenPort, "p", "", "Port to listen, default 8080")
 	flag.StringVar(&unixSocketPath, "u", "", "Listen on Unix socket")
 	flag.BoolVar(&profiling, "P", false, "Enable profiling")
 	flag.Parse()
