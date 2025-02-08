@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -52,13 +53,47 @@ func getHostname(ctx context.Context, ip string) (string, error) {
 	return strings.Join(hostNames, ", "), nil
 }
 
+type Option func(*HTTPServer)
+
+func WithUnixSocketListener(socketPath string) Option {
+	// Remove any existing socket file
+	if _, err := os.Stat(socketPath); err == nil {
+		if err := os.Remove(socketPath); err != nil {
+			log.Panicf("Error removing existing socket: %s", err)
+		}
+	}
+
+	// Create a listener on the Unix socket
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		log.Panicf("Error creating Unix socket: %s", err)
+	}
+
+	// Ensure the socket file is accessible by web server user and the non privileged user.
+	// Forbid access for others.
+	if err := os.Chmod(socketPath, 0o770); err != nil {
+		log.Panicf("Error setting permissions on socket: %s", err)
+	}
+
+	return func(h *HTTPServer) {
+		h.listener = listener
+	}
+}
+
+func WithTCPSocketListener(host, port string) Option {
+	return func(h *HTTPServer) {
+		h.server.Addr = net.JoinHostPort(host, port)
+	}
+}
+
 type HTTPServer struct {
+	listener net.Listener
 	geoData  *geoip.GeoInfo
 	serveMux *http.ServeMux
 	server   *http.Server
 }
 
-func NewHTTPServer() *HTTPServer {
+func NewHTTPServer(opts ...Option) *HTTPServer {
 	sm := http.NewServeMux()
 	h := &HTTPServer{
 		geoData:  geoip.New(),
@@ -70,15 +105,28 @@ func NewHTTPServer() *HTTPServer {
 		},
 	}
 
+	// Override defaults
+	for _, opt := range opts {
+		opt(h)
+	}
+
 	return h
 }
 
 func (h *HTTPServer) Start() {
-	log.Printf("Starting server on %s", h.server.Addr)
 	go func() {
-		if err := h.server.ListenAndServe(); err != nil &&
-			!errors.Is(err, http.ErrServerClosed) {
-			log.Print("HTTP server closed")
+		if h.listener != nil {
+			log.Printf("Starting server on Unix socket %s", h.listener.Addr())
+			if err := h.server.Serve(h.listener); err != nil &&
+				!errors.Is(err, http.ErrServerClosed) {
+				log.Print("HTTP server closed")
+			}
+		} else {
+			log.Printf("Starting server on %s", h.server.Addr)
+			if err := h.server.ListenAndServe(); err != nil &&
+				!errors.Is(err, http.ErrServerClosed) {
+				log.Print("HTTP server closed")
+			}
 		}
 	}()
 }

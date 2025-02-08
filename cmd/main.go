@@ -21,10 +21,11 @@ var (
 
 // Flags
 var (
-	showVersion bool
-	profiling   bool
-	endpoint    string
-	listenPort  string
+	showVersion    bool
+	profiling      bool
+	pathEndoint    string
+	listenPort     string
+	unixSocketPath string
 )
 
 func enableProfiling() (*os.File, func()) {
@@ -44,8 +45,9 @@ func main() {
 	ctx := context.Background()
 
 	flag.BoolVar(&showVersion, "v", false, "Show version (git hash) and build time")
-	flag.StringVar(&endpoint, "e", "", "Which HTTP route endpoint to listen i.e. http://localhost/myendpoint")
-	flag.StringVar(&listenPort, "p", "8080", "Port to listen")
+	flag.StringVar(&pathEndoint, "e", "", "Which HTTP route endpoint to listen i.e. http://localhost/myendpoint")
+	flag.StringVar(&listenPort, "p", "", "Port to listen")
+	flag.StringVar(&unixSocketPath, "u", "", "Listen on Unix socket")
 	flag.BoolVar(&profiling, "P", false, "Enable profiling")
 	flag.Parse()
 
@@ -63,8 +65,19 @@ func main() {
 		}()
 	}
 
-	httpServer := httpserver.NewHTTPServer()
-	httpServer.AddRoute(fmt.Sprintf("/%s", endpoint), httpServer.HostInfo)
+	if unixSocketPath != "" && listenPort != "" {
+		fmt.Println("Using Unix socket and TCP socket simultaneously is not supported")
+		os.Exit(1) //nolint:gocritic // Nothing to be closed at this point so exit is safe
+	}
+
+	var httpServer *httpserver.HTTPServer
+	if unixSocketPath != "" {
+		httpServer = httpserver.NewHTTPServer(httpserver.WithUnixSocketListener(unixSocketPath))
+	} else {
+		httpServer = httpserver.NewHTTPServer()
+	}
+
+	httpServer.AddRoute(fmt.Sprintf("/%s", pathEndoint), httpServer.HostInfo)
 	httpServer.Start()
 	defer httpServer.Stop(ctx)
 
